@@ -1,0 +1,33 @@
+{
+  "name": "qvedx",
+  "version": "0.0.1",
+  "description": "Node Module for triggering EDX Tasks in QlikView (QMS API)",
+  "dependencies": {
+    "ntlm": "~0.1.1",
+    "request": "~2.36.0",
+    "agentkeepalive": "~0.2.2",
+    "xml2js": "~0.4.3",
+    "wait.for": "~0.6.4"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pomalbisser/qvedx.git"
+  },
+  "keywords": [
+    "QV",
+    "QlikView",
+    "EDX",
+    "QMS",
+    "API"
+  ],
+  "author": "Pom Albisser <roman.albisser@alsee.net> (http://alsee.net/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pomalbisser/qvedx/issues"
+  },
+  "homepage": "https://github.com/pomalbisser/qvedx"
+}
