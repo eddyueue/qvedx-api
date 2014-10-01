@@ -8,26 +8,42 @@ Node Module for triggering EDX Tasks in QlikView (QMS API)
     npm install pomalbisser/qvedx
 
 ## Example:
+	var wait = require('wait.for');
 
-    var winGroups = require('win-groups');
+	// Configuration
+	var appConfig = {
+	    EDXApiSettings: {
+	        //proxy: "http://localhost:3128",
+	        host: "<QMS-HOST>",
+	        port: 4799,
+	        ntlm: {user: '<DOMAIN>\\<USER>:<PASSWORD>'},
+	        trace: true,
+	        connectTimeout: 5,
+	        requestLog: true
+	    }
+	};
 
-	var username = process.env.username;
-	var domain = process.env.userdomain;
-	var group = 'Users';
+    var QVEDX = require('./index')
+    , q = new QVEDX(appConfig.EDXApiSettings);
 
-    winGroups.isGroupMember({user: username, domain: domain, group: group}, function(err,isGroupMember){
-      if(err)
-        return console.log(err);
+	var getServiceKey = function(){
+	    var result = wait.for(q.GetTimeLimitedServiceKey);
+	    return result; 
+	}
 
-      console.log('Is in group:', isGroupMember);
-    });
+	function triggerTask(){
+		getServiceKey();
+		console.log("Starting EDX Task: " + url.query.taskname);
+		var triggerResult = wait.for(q.TriggerEDXTask,{
+		    taskNameOrID: "My EX Task",
+		    password: "foo"
+		});
+		console.log("triggerResult",triggerResult);
+	}
 
-> Note: This would test whether the currently logged on user is part of the Users group.
-> Windows 8: This does not seem to work on Win8 anymore though since the users are not in automatically part of the Users group anymore.. 
+	wait.launchFiber(triggerTask);
+
+> Note: This module is in a very basic state and I can not guarantee full functionality.
 
 # Features
-- domain support
-- check if account name belongs to a specific group (isGroupMember)
-- add member to a group (addGroupMember)
-- remove member from a group (deleteGroupMember)
-- get all members of a group (getGroupMembers)
+- trigger QlikView QMS EDX Task
