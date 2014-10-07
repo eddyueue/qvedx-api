@@ -25,3 +25,11 @@ build/Release
 node_modules
 
 curl-requests.txt
+
+trace.txt
+cheatsheet.txt
+
+*.json
+
+res/*
+example-*.js
