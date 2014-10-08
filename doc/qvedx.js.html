@@ -36,17 +36,37 @@ var fs = require('fs');
 var child;
 
 
-
+var templateMatch = /\{([^\}]+)?\}/g;
 expandTemplate = function(template, data) {
-    var regex = /\{([^\}]+)?\}/g;
-    while(match = regex.exec(template)) {
+    while(match = templateMatch.exec(template)) {
         template = template.replace(match[0], data[match[1]])
     }
     return template;
 }
 
+var returnCodeMatch = new RegExp(/curl\:\s\((.*)\)(.*)/);
+parseCURLError = function(err,stdout,stderr){
+    var match = returnCodeMatch.exec(stderr);
+    //see http://curl.haxx.se/libcurl/c/libcurl-errors.html
+    if(match){
+        var statusCode = match[1];
+        var msg = match[2].trim();
+        if(statusCode == 0){
+            return false;
+        } else if(statusCode == 6){
+            return "CURLE_COULDNT_RESOLVE_HOST: " + msg;
+        } else if(statusCode == 28){
+            return "CURLE_OPERATION_TIMEDOUT: " + msg;
+        } else {
+            return "UNKNOWN: " + msg;
+        }
+    } else {
+        return stderr;
+    }
+}
 
 writeRequestLog = function(id,cmd){
+    //TODO check if log folder exists
 	if(QVEDX.requestLog){
 		cmd = cmd.replace(QVEDX.options.ntlm.user,'****');
 
@@ -91,6 +111,78 @@ stripPrefix = function(name){
 	var ret = str.replace(prefixMatch, '');
 	return ret;
 }
+
+
+
+createCurlRequest = function(options){
+    var url = QVEDX.protocol + '://' + QVEDX.host + ':' + QVEDX.port + '/' + QVEDX.endpoint;
+    var hostname = QVEDX.host + ':' + QVEDX.port;
+
+    var cmds = [QVEDX.curlExecutable + " -X POST"];
+
+    if(options.verbose){
+        cmds.push("-v");
+    }   
+
+    if(options.data){
+        cmds.push('-d "' + options.data + '"');
+    }
+
+    if(options.contentType){
+        cmds.push('--header "'+options.contentType+'"');
+    } else {
+        cmds.push('--header "Content-Type: text/xml; charset=utf-8"');
+    }
+
+    if(QVEDX.serviceKey){
+        cmds.push('--header "X-Service-Key: ' + QVEDX.serviceKey + '"');
+    } else {
+        //cmds.push('--header "X-Service-Key:"');
+        if(options.soapAction.indexOf('GetTimeLimitedServiceKey') == -1){
+            //get service key sync
+        }
+    }
+
+    if(options.soapAction){
+        cmds.push('--header "SOAPAction: \\\"' + options.soapAction + '\\\""');
+    }
+
+    cmds.push('--header "Host: ' + hostname + '"');
+
+
+    //cmds.push('--header "Expect: 100-continue"');
+    cmds.push('--header "Accept-Encoding: gzip, deflate"');
+
+
+    if(true){
+        //cmds.push('--header "Expect: 100-continue"');
+    }
+
+    if(QVEDX.connectTimeout){
+        cmds.push('--connect-timeout ' + QVEDX.connectTimeout); 
+    } else {
+        cmds.push('--connect-timeout 5');
+    }
+    
+
+    if(QVEDX.options.ntlm){
+        //cmds.push('--noproxy');
+        cmds.push('--ntlm -u ' + QVEDX.options.ntlm.user);
+    }
+
+    if(QVEDX.proxy && (QVEDX.options.ntlm == false)){
+        cmds.push('--proxy ' + options.proxy + '');
+    }   
+
+    if(QVEDX.trace){
+        cmds.push('--trace-ascii trace.txt');
+    }
+
+    cmds.push(url);
+
+    return cmds.join(" ");
+}
+
 
 var runStatus = {
 	WAITING: {value: 'Waiting', description: 'The task is waiting to be executed.' },
@@ -203,76 +295,6 @@ function QVEDX(options){
 	QVEDX.prototype.TRIGGER_RESULTS = triggerResults;
 	QVEDX.prototype.SERVICE_TYPES = serviceTypes;
 };
-
-
-createCurlRequest = function(options){
-	var url = QVEDX.protocol + '://' + QVEDX.host + ':' + QVEDX.port + '/' + QVEDX.endpoint;
-	var hostname = QVEDX.host + ':' + QVEDX.port;
-
-	var cmds = ["curl -X POST"];
-
-	if(options.verbose){
-		cmds.push("-v");
-	}	
-
-	if(options.data){
-		cmds.push('-d "' + options.data + '"');
-	}
-
-	if(options.contentType){
-		cmds.push('--header "'+options.contentType+'"');
-	} else {
-		cmds.push('--header "Content-Type: text/xml; charset=utf-8"');
-	}
-
-	if(QVEDX.serviceKey){
-		cmds.push('--header "X-Service-Key: ' + QVEDX.serviceKey + '"');
-	} else {
-		//cmds.push('--header "X-Service-Key:"');
-		if(options.soapAction.indexOf('GetTimeLimitedServiceKey') == -1){
-			//get service key sync
-		}
-	}
-
-	if(options.soapAction){
-		cmds.push('--header "SOAPAction: \\\"' + options.soapAction + '\\\""');
-	}
-
-	cmds.push('--header "Host: ' + hostname + '"');
-
-
-	//cmds.push('--header "Expect: 100-continue"');
-	cmds.push('--header "Accept-Encoding: gzip, deflate"');
-
-
-	if(true){
-		//cmds.push('--header "Expect: 100-continue"');
-	}
-
-	if(QVEDX.options.connectTimeout){
-		cmds.push('--connect-timeout ' + QVEDX.options.connectTimeout);	
-	} else {
-		cmds.push('--connect-timeout 5');
-	}
-	
-
-	if(QVEDX.options.ntlm){
-		//cmds.push('--noproxy');
-		cmds.push('--ntlm -u ' + QVEDX.options.ntlm.user);
-	}
-
-	if(QVEDX.proxy && (QVEDX.options.ntlm == false)){
-		cmds.push('--proxy ' + options.proxy + '');
-	}	
-
-	if(QVEDX.options.trace){
-		cmds.push('--trace-ascii trace.txt');
-	}
-
-	cmds.push(url);
-
-	return cmds.join(" ");
-}
 
 /**
  * Get Time Limited Service Key
@@ -509,7 +531,7 @@ QVEDX.prototype.GetUserDocuments = function(options,callback){
  * 
  * @param {object} options - Options
  * 	@param {object} options.documentNode - DocumentNode
- *  @param {object} options.scope - Scope
+ *  @param {object} [options.scope=All] - Scope
  * @param {function} callback - Callback
  *	@param {object} callback.err - Error
  * 	@param {object} callback.value - Document Meta Data
@@ -529,6 +551,52 @@ QVEDX.prototype.GetDocumentMetaData = function(options,callback){
 		data: expandTemplate(data,options.documentNode)
 	},callback);	
 }
+
+
+/**
+ * Get CAL Info for User
+ * @since  0.0.2
+ * @public
+ *
+ * @example //Get CAL Info for User
+ *  var metadata = wait.for(q.GetCALInfoForUser,{
+ *      user: "DOMAIN\\USER"
+ *  });
+ *
+ * @example //Get CAL Info for User
+ *  q.GetCALInfoForUser({
+ *      user: "DOMAIN\\USER"
+ *  }, function(err,calInfo){
+ *      if(err){
+ *          return console.log(err);
+ *      }
+ *      console.dir(calInfo);
+ *  });
+ * 
+ * @param {object} options - Options
+ *  @param {object} options.user - user
+ *  @param {object} [options.qvsID] - QVS ID
+ * @param {function} callback - Callback
+ *  @param {object} callback.err - Error
+ *  @param {object} callback.value - Document Meta Data
+ */
+QVEDX.prototype.GetCALInfoForUser = function(options,callback){
+    if(!options.user){
+        return callback({err: 'options.user not defined'});
+    }
+
+    if(!options.qvsID){
+        return callback({err: 'options.qvsID not defined'});
+    }
+
+    var data = '&lt;GetCALInfoForUser xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qvsID>{qvsID}&lt;/qvsID>&lt;user>{user}&lt;/user>&lt;/GetCALInfoForUser>';
+
+    QVEDX.prototype.GenericAPICall({
+        soapAction: 'GetCALInfoForUser',
+        data: expandTemplate(data,options)
+    },callback);    
+}
+
 
 QVEDX.prototype.GetTaskStatusNodes = function(options,callback){ 
 	if (typeof options === 'function'){
@@ -553,6 +621,7 @@ QVEDX.prototype.GetTaskStatusNodes = function(options,callback){
 	},callback);
 }
 
+
 QVEDX.prototype.GenericAPICall = function (options,callback){
 	if(!options.soapAction){
 		return callback({err: 'options.soapAction not defined'});
@@ -567,7 +636,7 @@ QVEDX.prototype.GenericAPICall = function (options,callback){
 	}
 
 	var callId = uuid.v1();
-	console.log('---- ' + callId + ' ' + options.soapAction);
+	console.log('---- QVEDX-API-Request: ' + callId + ' ' + options.soapAction);
 
 
 	var err = null;
@@ -585,8 +654,14 @@ QVEDX.prototype.GenericAPICall = function (options,callback){
 		writeRequestLog(callId,stdout + '\n' + stderr);
 
 		if(err !== null){
-			return callback(err);
+            return callback(parseCURLError(err, stdout, stderr));
 		}
+
+        if(stdout == ""){
+            //TODO improve error handling!
+            //QMS API returns in some cases empty results. Very ugly
+            return callback(err,"Empty response from QMS API received");
+        }
 
 		soapResult = null;
 
@@ -613,6 +688,7 @@ QVEDX.prototype.GenericAPICall = function (options,callback){
 		});
 	});
 }
+
 
 
 //GetCALInfoForUser
@@ -1111,7 +1187,7 @@ module.exports = QVEDX;</code></pre>
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Wed Oct 08 2014 17:14:58 GMT+0200 (MESZ)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Wed Oct 08 2014 18:56:59 GMT+0200 (MESZ)
 </footer>
 
 <script> prettyPrint(); </script>

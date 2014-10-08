@@ -97,6 +97,24 @@ See {@link QVEDX#GetUserDocuments}.
 
 **callback.value**: object, Document Meta Data
 
+module:QVEDX.GetCALInfoForUser(options, options.user, options.qvsID, callback, callback.err, callback.value) 
+-----------------------------
+Get CAL Info for User
+
+**Parameters**
+
+**options**: object, Options
+
+**options.user**: object, user
+
+**options.qvsID**: object, QVS ID
+
+**callback**: function, Callback
+
+**callback.err**: object, Error
+
+**callback.value**: object, Document Meta Data
+
 
 
 ---
