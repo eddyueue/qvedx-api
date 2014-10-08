@@ -41,7 +41,7 @@ The QVEDX-API requires a CURL installation to communicate with the QlikView Mana
 > Note: This module is in a very basic state and I can not guarantee full functionality.
 
 # Documentation
-See [doc/index.htm](https://github.com/pomalbisser/qvedx-api/doc/index.html)
+See [doc/index.htm](https://github.com/pomalbisser/qvedx-api/blob/master/doc/markdown/readme.md)
 
 # Working API Methods
 - Trigger a QlikView QMS EDX Task - [TriggerEDXTask](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#TriggerEDXTask)
