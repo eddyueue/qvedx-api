@@ -41,15 +41,15 @@ The QVEDX-API requires a CURL installation to communicate with the QlikView Mana
 > Note: This module is in a very basic state and I can not guarantee full functionality.
 
 # Documentation
-See [doc/index.htm](./doc/index.html)
+See [doc/index.htm](https://github.com/pomalbisser/qvedx-api/doc/index.html)
 
 # Working API Methods
-- Trigger a QlikView QMS EDX Task - [TriggerEDXTask](doc/module-QVEDX.html#TriggerEDXTask)
-- Get QlikView Services - [GetServices](doc/module-QVEDX.html#GetServices)
-- Query User Documents - [GetUserDocuments](doc/module-QVEDX.html#GetUserDocuments)
-- Query Document Meta Data - [GetDocumentMetaData](doc/module-QVEDX.html#GetDocumentMetaData)
+- Trigger a QlikView QMS EDX Task - [TriggerEDXTask](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#TriggerEDXTask)
+- Get QlikView Services - [GetServices](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetServices)
+- Query User Documents - [GetUserDocuments](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetUserDocuments)
+- Query Document Meta Data - [GetDocumentMetaData](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetDocumentMetaData)
 
-Detailed API-Documentation: [doc/module-QVEDX.html](doc/module-QVEDX.html)
+Detailed API-Documentation: [doc/module-QVEDX.html](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html)
 
 
 #Development
