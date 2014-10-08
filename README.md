@@ -5,6 +5,17 @@ Node Module for triggering EDX Tasks in QlikView (QMS API) (VERY BETA!)
 
 # Pre Requisites
 The QVEDX-API requires a CURL installation to communicate with the QlikView Management Service using NTLM authentication. (Tested with Version 7.37.0) Install CURL from [http://www.confusedbycode.com/curl/#downloads](http://www.confusedbycode.com/curl/#downloads) (add to path)
+	
+
+- npm install wait.for
+- npm install node-uuid
+
+## NPM Dependencies
+  	"dependencies": {
+    	"node-uuid": "^1.4.1",
+    	"wait.for": "^0.6.6"
+  	}    
+
 
 # Installation
     npm install pomalbisser/qvedx-api
@@ -13,7 +24,7 @@ The QVEDX-API requires a CURL installation to communicate with the QlikView Mana
 	var wait = require('wait.for');
 
 	// Configuration
-	var apiSettings: {
+	var apiSettings = {
 		host: "<QMS-HOST>",
 	    ntlm: {user: '<DOMAIN>\\<USER>:<PASSWORD>'}
 	};
