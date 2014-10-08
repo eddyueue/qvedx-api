@@ -54,4 +54,4 @@ Detailed API-Documentation: [doc/module-QVEDX.html](https://github.com/pomalbiss
 
 #Development
 - Update Documentation
-	> grunt jsdoc
+	> grunt generate-docs
