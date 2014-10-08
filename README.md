@@ -5,7 +5,7 @@ Node Module for triggering EDX Tasks in QlikView (QMS API) (VERY BETA!)
 
 # Installation
 
-    npm install pomalbisser/qvedx
+    npm install pomalbisser/qvedx-api
 
 ## Example:
 	var wait = require('wait.for');
