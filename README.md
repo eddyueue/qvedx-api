@@ -63,6 +63,7 @@ See [doc/index.htm](https://github.com/pomalbisser/qvedx-api/blob/master/doc/mar
 - Query User Documents - [GetUserDocuments](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetUserDocuments)
 - Query Document Meta Data - [GetDocumentMetaData](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetDocumentMetaData)
 - Get CAL Info for User - GetCALInfoForUser
+- Lookup User Names - LookupNames
 
 Detailed API-Documentation: [doc/module-QVEDX.html](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html)
 
