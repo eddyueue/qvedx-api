@@ -52,13 +52,13 @@ parseCURLError = function(err,stdout,stderr){
         var statusCode = match[1];
         var msg = match[2].trim();
         if(statusCode == 0){
-            return false;
+            return false; //no error
         } else if(statusCode == 6){
-            return "CURLE_COULDNT_RESOLVE_HOST: " + msg;
+            return {err: { type: "CURLE_COULDNT_RESOLVE_HOST", msg: msg, code: statusCode}};
         } else if(statusCode == 28){
-            return "CURLE_OPERATION_TIMEDOUT: " + msg;
+            return {err: { type: "CURLE_OPERATION_TIMEDOUT", msg: msg, code: statusCode}};
         } else {
-            return "UNKNOWN: " + msg;
+            return {err: { type: "UNKNOWN", msg: msg, code: statusCode}};
         }
     } else {
         return stderr;
@@ -111,8 +111,6 @@ stripPrefix = function(name){
 	var ret = str.replace(prefixMatch, '');
 	return ret;
 }
-
-
 
 createCurlRequest = function(options){
     var url = QVEDX.protocol + '://' + QVEDX.host + ':' + QVEDX.port + '/' + QVEDX.endpoint;
@@ -184,6 +182,24 @@ createCurlRequest = function(options){
 }
 
 
+createErrorObject = function(msg,code,type){
+    msg = msg || '';
+    code = code || 0;
+    type = type || '';
+    var error = new Error(type + " Message: " + msg + " [Code: " + code + "]");
+
+    //Clean-Up Stack Trace
+    var stackTrace = error.stack.split("\n");
+    error.stackTrace = [];
+    stackTrace.forEach(function(element,index){
+        if(element.indexOf('createErrorObject') == -1){
+            error.stackTrace.push(element)
+        }
+    });
+    error.stack = error.stackTrace.join("\n");
+    return error;
+}
+
 var runStatus = {
 	WAITING: {value: 'Waiting', description: 'The task is waiting to be executed.' },
 	RUNNING: {value: 'Running', description: 'The task is running.' },
@@ -225,7 +241,7 @@ var serviceTypes = {
 	/** Qlik View Server */
 	QVS: 'QlikViewServer',
 	/** Qlik View Directory Service Connector */
-	DCS: 'QlikViewDirectoryServiceConnector',
+	DSC: 'QlikViewDirectoryServiceConnector',
 	/** Qlik View Web Server */
 	QVWS:'QlikViewWebServer',
 	/** Remote Qlik View Management Service */
@@ -320,7 +336,6 @@ QVEDX.prototype.Ping = function(options,callback){
 		data: '&lt;Ping xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\"/>&lt;/s:Body>&lt;/s:Envelope>'
 	},callback);
 }
-
 
 QVEDX.prototype.FindEDX = function(options,callback){
 	if(!options.name){
@@ -448,7 +463,6 @@ QVEDX.prototype.GetServices = function(options,callback){
 	},callback);	
 }
 
-
 QVEDX.prototype.GetTasks = function(options,callback){
 	if(!options.qdsID){
 		options.qdsID = '00000000-0000-0000-0000-000000000000';
@@ -552,14 +566,12 @@ QVEDX.prototype.GetDocumentMetaData = function(options,callback){
 	},callback);	
 }
 
-
 /**
  * Get CAL Info for User
  * @since  0.0.2
  * @public
  *
  * @example //Get CAL Info for User
- *  // Configuration
  *  var services = wait.for(q.GetServices,{
  *      serviceTypes: q.SERVICE_TYPES.QVS
  *  });
@@ -574,7 +586,8 @@ QVEDX.prototype.GetDocumentMetaData = function(options,callback){
  *
  * @example //Get CAL Info for User
  *  q.GetCALInfoForUser({
- *      user: "DOMAIN\\USER"
+ *      user: "DOMAIN\\USER",
+ *      qvsID: "QVSID"
  *  }, function(err,calInfo){
  *      if(err){
  *          return console.log(err);
@@ -607,6 +620,59 @@ QVEDX.prototype.GetCALInfoForUser = function(options,callback){
 }
 
 
+/**
+ * Lookup Names
+ * @since  0.0.2
+ * @public
+ *
+ * @example //Lookup Names
+ *  var services = wait.for(q.GetServices,{
+ *      serviceTypes: q.SERVICE_TYPES.DSC
+ *  });
+ *
+ *  if(services && services.ServiceInfo){
+ *    var users = wait.for(q.LookupNames,{
+ *      user: "DOMAIN\\USER",
+ *      dscID: services.ServiceInfo.ID
+ *    });
+ *    console.log("users",users);
+ *  }
+ *
+ * @example //Get CAL Info for User
+ *  q.LookupNames({
+ *      user: "DOMAIN\\USER",
+ *      dscID: "DSCID"
+ *  }, function(err,users){
+ *      if(err){
+ *          return console.log(err);
+ *      }
+ *      console.dir(users);
+ *  });
+ * 
+ * @param {object} options - Options
+ *  @param {object} options.user - user
+ *  @param {object} options.dscID - DSC ID
+ * @param {function} callback - Callback
+ *  @param {object} callback.err - Error
+ *  @param {object} callback.value - Document Meta Data
+ */
+QVEDX.prototype.LookupNames = function(options,callback){
+    if(!options.user){
+        return callback({err: 'options.user not defined'});
+    }
+
+    if(!options.dscID){
+        return callback(createErrorObject('options.dscID not defined'));
+    }
+
+    var data = '&lt;LookupNames xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;dscID>{dscID}&lt;/dscID>&lt;names xmlns:a=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:string>{user}&lt;/a:string>&lt;/names>&lt;/LookupNames>';
+
+    QVEDX.prototype.GenericAPICall({
+        soapAction: 'LookupNames',
+        data: expandTemplate(data,options)
+    },callback);    
+}
+
 QVEDX.prototype.GetTaskStatusNodes = function(options,callback){ 
 	if (typeof options === 'function'){
 		callback = options; 
@@ -629,7 +695,6 @@ QVEDX.prototype.GetTaskStatusNodes = function(options,callback){
 		data: data3
 	},callback);
 }
-
 
 QVEDX.prototype.GenericAPICall = function (options,callback){
 	if(!options.soapAction){
@@ -698,15 +763,12 @@ QVEDX.prototype.GenericAPICall = function (options,callback){
 	});
 }
 
-
-
-//GetCALInfoForUser
-
 //GetQVSDocumentsPerUser
 
 //GetQVSDocumentsAndUsers
 
 //LookupNames
+//&lt;s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">&lt;s:Body>&lt;LookupNames xmlns="http://ws.qliktech.com/QMS/11/">&lt;dscID>03a8f05a-4f00-4193-8df8-c2d07c2a7f82&lt;/dscID>&lt;names xmlns:a="http://schemas.microsoft.com/2003/10/Serialization/Arrays" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">&lt;a:string>ww002\albisser&lt;/a:string>&lt;a:string>roman.albisser@siemens.com&lt;/a:string>&lt;a:string>z000dk3q&lt;/a:string>&lt;a:string>albisser*&lt;/a:string>&lt;/names>&lt;/LookupNames>&lt;/s:Body>&lt;/s:Envelope>
 
 //ResolveUserGroups
 
@@ -1196,7 +1258,7 @@ module.exports = QVEDX;</code></pre>
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Wed Oct 08 2014 19:06:18 GMT+0200 (MESZ)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu Oct 09 2014 14:32:18 GMT+0200 (MESZ)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -115,6 +115,24 @@ Get CAL Info for User
 
 **callback.value**: object, Document Meta Data
 
+module:QVEDX.LookupNames(options, options.user, options.dscID, callback, callback.err, callback.value) 
+-----------------------------
+Lookup Names
+
+**Parameters**
+
+**options**: object, Options
+
+**options.user**: object, user
+
+**options.dscID**: object, DSC ID
+
+**callback**: function, Callback
+
+**callback.err**: object, Error
+
+**callback.value**: object, Document Meta Data
+
 
 
 ---

@@ -888,7 +888,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line246">line 246</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line262">line 262</a>
     </li></ul></dd>
     
     
@@ -1113,7 +1113,7 @@
 	
         <tr>
             
-                <td class="name"><code>DCS</code></td>
+                <td class="name"><code>DSC</code></td>
             
             
             <td class="type">
@@ -1250,7 +1250,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line191">line 191</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line207">line 207</a>
     </li></ul></dd>
     
     
@@ -1547,7 +1547,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line175">line 175</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line191">line 191</a>
     </li></ul></dd>
     
     
@@ -1828,7 +1828,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line565">line 565</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line578">line 578</a>
     </li></ul></dd>
     
     
@@ -1854,7 +1854,6 @@
         <h5>Examples</h5>
         
     <pre class="prettyprint"><code> //Get CAL Info for User
- // Configuration
  var services = wait.for(q.GetServices,{
      serviceTypes: q.SERVICE_TYPES.QVS
  });
@@ -1869,7 +1868,8 @@
 
     <pre class="prettyprint"><code> //Get CAL Info for User
  q.GetCALInfoForUser({
-     user: "DOMAIN\\USER"
+     user: "DOMAIN\\USER",
+     qvsID: "QVSID"
  }, function(err,calInfo){
      if(err){
          return console.log(err);
@@ -2169,7 +2169,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line512">line 512</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line526">line 526</a>
     </li></ul></dd>
     
     
@@ -2534,7 +2534,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line412">line 412</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line427">line 427</a>
     </li></ul></dd>
     
     
@@ -2783,7 +2783,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line281">line 281</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line297">line 297</a>
     </li></ul></dd>
     
     
@@ -3090,7 +3090,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line473">line 473</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line487">line 487</a>
     </li></ul></dd>
     
     
@@ -3128,6 +3128,318 @@
          return console.log(err);
      }
      console.dir(documents);
+ });</code></pre>
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="LookupNames"><span class="type-signature"></span>LookupNames<span class="signature">(options, callback)</span><span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    <div class="description">
+        Lookup Names
+    </div>
+    
+
+    
+    
+    
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Options
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>user</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">user</td>
+        </tr>
+	
+	
+	
+        <tr>
+            
+                <td class="name"><code>dscID</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">DSC ID</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+            </td>
+        </tr>
+	
+	
+	
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Callback
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>err</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Error</td>
+        </tr>
+	
+	
+	
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Document Meta Data</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+            </td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+    <dt class="tag-since">Since:</dt>
+    <dd class="tag-since"><ul class="dummy"><li>0.0.2</dd>
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line632">line 632</a>
+    </li></ul></dd>
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+        <h5>Examples</h5>
+        
+    <pre class="prettyprint"><code> //Lookup Names
+ var services = wait.for(q.GetServices,{
+     serviceTypes: q.SERVICE_TYPES.DSC
+ });
+
+ if(services && services.ServiceInfo){
+   var users = wait.for(q.LookupNames,{
+     user: "DOMAIN\\USER",
+     dscID: services.ServiceInfo.ID
+   });
+   console.log("users",users);
+ }</code></pre>
+
+    <pre class="prettyprint"><code> //Get CAL Info for User
+ q.LookupNames({
+     user: "DOMAIN\\USER",
+     dscID: "DSCID"
+ }, function(err,users){
+     if(err){
+         return console.log(err);
+     }
+     console.dir(users);
  });</code></pre>
 
     
@@ -3430,7 +3742,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line337">line 337</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line352">line 352</a>
     </li></ul></dd>
     
     
@@ -3497,7 +3809,7 @@
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Wed Oct 08 2014 19:06:18 GMT+0200 (MESZ)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu Oct 09 2014 14:32:18 GMT+0200 (MESZ)
 </footer>
 
 <script> prettyPrint(); </script>
