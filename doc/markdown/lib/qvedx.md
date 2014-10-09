@@ -25,7 +25,7 @@ Get Time Limited Service Key
 
 **callback.value**: object, Service Key
 
-module:QVEDX.TriggerEDXTask(options, options.taskNameOrID, options.password, callback, callback.err, callback.value) 
+module:QVEDX.TriggerEDXTask(options, options.taskNameOrID, options.password, callback, callback.err, callback.value, callback.value.ExecId) 
 -----------------------------
 Trigger EDX Task
 
@@ -36,6 +36,24 @@ Trigger EDX Task
 **options.taskNameOrID**: string, Task Name or Task ID
 
 **options.password**: string, Password
+
+**callback**: function, Callback
+
+**callback.err**: object, Error
+
+**callback.value**: object, Trigger Result
+
+**callback.value.ExecId**: object, Trigger Result ExecId
+
+module:QVEDX.GetEDXTaskStatus(options, options.executionID, callback, callback.err, callback.value) 
+-----------------------------
+Get EDX Task Status
+
+**Parameters**
+
+**options**: object, Options
+
+**options.executionID**: string, ExecId from Trigger Result
 
 **callback**: function, Callback
 

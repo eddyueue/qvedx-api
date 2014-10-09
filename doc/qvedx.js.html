@@ -33,180 +33,180 @@ var parseString = require('xml2js').parseString;
 var wait = require('wait.for');
 var uuid = require('node-uuid');
 var fs = require('fs');
-var child;
-
+var moment = require('moment');
+require("moment-duration-format");
 
 var templateMatch = /\{([^\}]+)?\}/g;
 expandTemplate = function(template, data) {
-    while(match = templateMatch.exec(template)) {
-        template = template.replace(match[0], data[match[1]])
-    }
-    return template;
+  while(match = templateMatch.exec(template)) {
+      template = template.replace(match[0], data[match[1]])
+  }
+  return template;
 }
 
 var returnCodeMatch = new RegExp(/curl\:\s\((.*)\)(.*)/);
 parseCURLError = function(err,stdout,stderr){
-    var match = returnCodeMatch.exec(stderr);
-    //see http://curl.haxx.se/libcurl/c/libcurl-errors.html
-    if(match){
-        var statusCode = match[1];
-        var msg = match[2].trim();
-        if(statusCode == 0){
-            return false; //no error
-        } else if(statusCode == 6){
-            return {err: { type: "CURLE_COULDNT_RESOLVE_HOST", msg: msg, code: statusCode}};
-        } else if(statusCode == 28){
-            return {err: { type: "CURLE_OPERATION_TIMEDOUT", msg: msg, code: statusCode}};
-        } else {
-            return {err: { type: "UNKNOWN", msg: msg, code: statusCode}};
-        }
-    } else {
-        return stderr;
-    }
+  var match = returnCodeMatch.exec(stderr);
+  //see http://curl.haxx.se/libcurl/c/libcurl-errors.html
+  if(match){
+      var statusCode = match[1];
+      var msg = match[2].trim();
+      if(statusCode == 0){
+          return false; //no error
+      } else if(statusCode == 6){
+          return createErrorObject("CURLE_COULDNT_RESOLVE_HOST",msg,statusCode);
+      } else if(statusCode == 28){
+          return createErrorObject("CURLE_OPERATION_TIMEDOUT", msg, statusCode);
+      } else {
+          return createErrorObject("UNKNOWN", msg, statusCode);
+      }
+  } else {
+      return createErrorObject("UNKNOWN", stderr);
+  }
+}
+
+createErrorObject = function(msg,code,type){
+  if (typeof msg === 'object'){
+      err = msg;
+      msg = err.msg || '';
+      code = err.code || 0;
+      type = err.type || '';
+  }
+
+  msg = msg || '';
+  code = code || 0;
+  type = type || '';
+  var error = new Error(type + " Message: " + msg + " [Code: " + code + "]");
+
+  //Clean-Up Stack Trace
+  var stackTrace = error.stack.split("\n");
+  error.stackTrace = [];
+  stackTrace.forEach(function(element,index){
+      if(element.indexOf('createErrorObject') == -1){
+          error.stackTrace.push(element)
+      }
+  });
+  error.stack = error.stackTrace.join("\n");
+  return error;
 }
 
 writeRequestLog = function(id,cmd){
-    //TODO check if log folder exists
-	if(QVEDX.requestLog){
-		cmd = cmd.replace(QVEDX.options.ntlm.user,'****');
+  //TODO check if log folder exists
+  if(QVEDX.requestLog){
+      cmd = cmd.replace(QVEDX.options.ntlm.user,'****');
 
-		if(QVEDX.consoleLog){
-			console.log("Request: " + cmd);
-		}
+      if(QVEDX.consoleLog){
+          console.log("Request: " + cmd);
+      }
 
-		fs.appendFileSync('request-log.log','ID: ' + id + ' - ' + new Date() + '\n' + cmd + '\n\n');
-	}	
+      fs.appendFileSync('request-log.log','ID: ' + id + ' - ' + new Date() + '\n' + cmd + '\n\n');
+  }   
 }
 
 handleSOAPFault = function(callback,soapFault,result,stdout){
-	console.log("SOAPFault",soapFault);
+  //TODO improve
+  console.log("SOAPFault",soapFault);
 
-	if(soapFault.faultstring == 'Service key is missing'){
-		//handle service key missing?
-	}
+  if(soapFault.faultstring == 'Service key is missing'){
+      //handle service key missing?
+  }
 
-	callback(soapFault,{stdout: stdout});
+  callback(soapFault,{stdout: stdout});
 }
 
 getSOAPBody = function(soapResult){
-	if (soapResult && soapResult["Envelope"] && soapResult["Envelope"]["Body"]){
-		var soapBody = soapResult["Envelope"]["Body"];
-		delete soapBody["$"];	
-		return soapBody
-	}
-	return null;
+  if (soapResult && soapResult["Envelope"] && soapResult["Envelope"]["Body"]){
+      var soapBody = soapResult["Envelope"]["Body"];
+      delete soapBody["$"];   
+      return soapBody
+  }
+  return null;
 }
 
 getSOAPFault = function(soapResult){
-	var soapBody = getSOAPBody(soapResult);
-	if(soapBody && soapBody["Fault"]){
-		return soapBody["Fault"];
-	}	
-	return null;
+  var soapBody = getSOAPBody(soapResult);
+  if(soapBody && soapBody["Fault"]){
+      return soapBody["Fault"];
+  }   
+  return null;
 }
 
 var prefixMatch = new RegExp(/(?!xmlns)^.*:/);
 stripPrefix = function(name){
-	var str = name;
-	var ret = str.replace(prefixMatch, '');
-	return ret;
+  var str = name;
+  var ret = str.replace(prefixMatch, '');
+  return ret;
 }
 
 createCurlRequest = function(options){
-    var url = QVEDX.protocol + '://' + QVEDX.host + ':' + QVEDX.port + '/' + QVEDX.endpoint;
-    var hostname = QVEDX.host + ':' + QVEDX.port;
+  var url = QVEDX.protocol + '://' + QVEDX.host + ':' + QVEDX.port + '/' + QVEDX.endpoint;
+  var hostname = QVEDX.host + ':' + QVEDX.port;
 
-    var cmds = [QVEDX.curlExecutable + " -X POST"];
+  var cmds = [QVEDX.curlExecutable + " -X POST"];
 
-    if(options.verbose){
-        cmds.push("-v");
-    }   
+  if(options.verbose){
+    cmds.push("-v");
+  }   
 
-    if(options.data){
-        cmds.push('-d "' + options.data + '"');
+  if(options.data){
+    cmds.push('-d "' + options.data + '"');
+  }
+
+  if(options.contentType){
+    cmds.push('--header "'+options.contentType+'"');
+  } else {
+    cmds.push('--header "Content-Type: text/xml; charset=utf-8"');
+  }
+
+  if(QVEDX.serviceKey){
+    cmds.push('--header "X-Service-Key: ' + QVEDX.serviceKey + '"');
+  } else {
+    //cmds.push('--header "X-Service-Key:"');
+    if(options.soapAction.indexOf('GetTimeLimitedServiceKey') == -1){
+      //get service key sync
     }
+  }
 
-    if(options.contentType){
-        cmds.push('--header "'+options.contentType+'"');
-    } else {
-        cmds.push('--header "Content-Type: text/xml; charset=utf-8"');
-    }
+  if(options.soapAction){
+    cmds.push('--header "SOAPAction: \\\"' + options.soapAction + '\\\""');
+  }
 
-    if(QVEDX.serviceKey){
-        cmds.push('--header "X-Service-Key: ' + QVEDX.serviceKey + '"');
-    } else {
-        //cmds.push('--header "X-Service-Key:"');
-        if(options.soapAction.indexOf('GetTimeLimitedServiceKey') == -1){
-            //get service key sync
-        }
-    }
+  cmds.push('--header "Host: ' + hostname + '"');
+  //cmds.push('--header "Expect: 100-continue"');
+  cmds.push('--header "Accept-Encoding: gzip, deflate"');
 
-    if(options.soapAction){
-        cmds.push('--header "SOAPAction: \\\"' + options.soapAction + '\\\""');
-    }
+  if(QVEDX.connectTimeout){
+      cmds.push('--connect-timeout ' + QVEDX.connectTimeout); 
+  } else {
+      cmds.push('--connect-timeout 5');
+  }
+  
+  if(QVEDX.options.ntlm){
+    //cmds.push('--noproxy');
+    cmds.push('--ntlm -u ' + QVEDX.options.ntlm.user);
+  }
 
-    cmds.push('--header "Host: ' + hostname + '"');
+  if(QVEDX.proxy && (QVEDX.options.ntlm == false)){
+    cmds.push('--proxy ' + options.proxy + '');
+  }   
 
+  if(QVEDX.trace){
+    cmds.push('--trace-ascii trace.txt');
+  }
 
-    //cmds.push('--header "Expect: 100-continue"');
-    cmds.push('--header "Accept-Encoding: gzip, deflate"');
+  cmds.push(url);
 
-
-    if(true){
-        //cmds.push('--header "Expect: 100-continue"');
-    }
-
-    if(QVEDX.connectTimeout){
-        cmds.push('--connect-timeout ' + QVEDX.connectTimeout); 
-    } else {
-        cmds.push('--connect-timeout 5');
-    }
-    
-
-    if(QVEDX.options.ntlm){
-        //cmds.push('--noproxy');
-        cmds.push('--ntlm -u ' + QVEDX.options.ntlm.user);
-    }
-
-    if(QVEDX.proxy && (QVEDX.options.ntlm == false)){
-        cmds.push('--proxy ' + options.proxy + '');
-    }   
-
-    if(QVEDX.trace){
-        cmds.push('--trace-ascii trace.txt');
-    }
-
-    cmds.push(url);
-
-    return cmds.join(" ");
+  return cmds.join(" ");
 }
 
-
-createErrorObject = function(msg,code,type){
-    msg = msg || '';
-    code = code || 0;
-    type = type || '';
-    var error = new Error(type + " Message: " + msg + " [Code: " + code + "]");
-
-    //Clean-Up Stack Trace
-    var stackTrace = error.stack.split("\n");
-    error.stackTrace = [];
-    stackTrace.forEach(function(element,index){
-        if(element.indexOf('createErrorObject') == -1){
-            error.stackTrace.push(element)
-        }
-    });
-    error.stack = error.stackTrace.join("\n");
-    return error;
-}
 
 var runStatus = {
-	WAITING: {value: 'Waiting', description: 'The task is waiting to be executed.' },
-	RUNNING: {value: 'Running', description: 'The task is running.' },
-	ABORTING: {value: 'Aborting', description: 'The task is aborting the execution.'},
-	FAILED: {value: 'Failed', description: 'The task failed.'},
-	WARNING: {value: 'Warning', description: 'The task completed with a warning.'},
-	COMPLEDTED: {value: 'Completed', description: 'The task has completed successfully.'}
+  WAITING: {value: 'Waiting', description: 'The task is waiting to be executed.' },
+  RUNNING: {value: 'Running', description: 'The task is running.' },
+  ABORTING: {value: 'Aborting', description: 'The task is aborting the execution.'},
+  FAILED: {value: 'Failed', description: 'The task failed.'},
+  WARNING: {value: 'Warning', description: 'The task completed with a warning.'},
+  COMPLEDTED: {value: 'Completed', description: 'The task has completed successfully.'}
 }
 
 /**
@@ -216,13 +216,13 @@ var runStatus = {
  * @alias module:QVEDX.TRIGGER_RESULTS
  */
 var triggerResults = {
-	SUCCESS: {value: 'Success', description: 'The task was started successfully.'},
-	TASK_NOT_FOUND: {value: 'TaskNotFound', description: 'The task was not found.'},	
-	ALREADY_RUNNING: {value: 'TaskIsAlreadyRunning', description: 'The task was already running.'},
-	NO_EDX_TRIGGER_FOUND: {value: 'NoEDXTriggerFound', description: 'The task did not have an EDX trigger.'},
-	COULD_NOT_DETERMINE_TASK_BY_NAME: {value: 'CouldNotDetermineTaskByName', description: 'Failed to identify the task by name only. There might by multiple tasks with similar names.'},
-	FAILED_TO_CONTACT_DISTRIBUTION_SERVICE: {value: 'FailedToContactDistributionService', description: 'The task could not be started because the QDS was not available.'},
-	OTHER_ERROR: {value: 'OtherError', description: 'An unknown error occured.'}
+  SUCCESS: {value: 'Success', description: 'The task was started successfully.'},
+  TASK_NOT_FOUND: {value: 'TaskNotFound', description: 'The task was not found.'},    
+  ALREADY_RUNNING: {value: 'TaskIsAlreadyRunning', description: 'The task was already running.'},
+  NO_EDX_TRIGGER_FOUND: {value: 'NoEDXTriggerFound', description: 'The task did not have an EDX trigger.'},
+  COULD_NOT_DETERMINE_TASK_BY_NAME: {value: 'CouldNotDetermineTaskByName', description: 'Failed to identify the task by name only. There might by multiple tasks with similar names.'},
+  FAILED_TO_CONTACT_DISTRIBUTION_SERVICE: {value: 'FailedToContactDistributionService', description: 'The task could not be started because the QDS was not available.'},
+  OTHER_ERROR: {value: 'OtherError', description: 'An unknown error occured.'}
 }
 
 /**
@@ -232,22 +232,22 @@ var triggerResults = {
  * @alias module:QVEDX.SERVICE_TYPES
  */
 var serviceTypes = {
-	/** None */
-	NONE: 'None',
-	/** Qlik View Management Service */
-	QMS: 'QlikViewManagementService',
-	/** Qlik View Distribution Service */
-	QDS: 'QlikViewDistributionService',
-	/** Qlik View Server */
-	QVS: 'QlikViewServer',
-	/** Qlik View Directory Service Connector */
-	DSC: 'QlikViewDirectoryServiceConnector',
-	/** Qlik View Web Server */
-	QVWS:'QlikViewWebServer',
-	/** Remote Qlik View Management Service */
-	RQMS:'RemoteQlikViewManagementService',
-	/** All Services */
-	ALL: 'All'
+  /** None */
+  NONE: 'None',
+  /** Qlik View Management Service */
+  QMS: 'QlikViewManagementService',
+  /** Qlik View Distribution Service */
+  QDS: 'QlikViewDistributionService',
+  /** Qlik View Server */
+  QVS: 'QlikViewServer',
+  /** Qlik View Directory Service Connector */
+  DSC: 'QlikViewDirectoryServiceConnector',
+  /** Qlik View Web Server */
+  QVWS:'QlikViewWebServer',
+  /** Remote Qlik View Management Service */
+  RQMS:'RemoteQlikViewManagementService',
+  /** All Services */
+  ALL: 'All'
 }
 
  /**
@@ -279,37 +279,42 @@ var serviceTypes = {
    *  
    *  @param {string} [options.defaultNamepsace=http://ws.qliktech.com/QMS/11/] - Default SOAP Namespace
    *  @param {object} [options.parserOptions] - xml2js parser options
-   *  	@param {object} [options.parserOptions.explicitArray=false] - explicitArray
-   *  	@param {object} [options.parserOptions.ignoreAttrs=true] - ignoreAttrs
-   *  	@param {array} [options.parserOptions.tagNameProcessors=[stripPrefix]] - tagNameProcessors
-   *  	@param {array} [options.parserOptions.attrNameProcessors=[stripPrefix]] - attrNameProcessors
+   *    @param {object} [options.parserOptions.explicitArray=false] - explicitArray
+   *    @param {object} [options.parserOptions.ignoreAttrs=true] - ignoreAttrs
+   *    @param {array} [options.parserOptions.tagNameProcessors=[stripPrefix]] - tagNameProcessors
+   *    @param {array} [options.parserOptions.attrNameProcessors=[stripPrefix]] - attrNameProcessors
    *  @param {string} [options.curlExecutable=curl] - CURL Executable
+   *  @param {string} [options.dateFormat=DD.MM.YYYY HH:mm:ss] - Date Format
+   *  @param {string} [options.durationFormat=HH:mm:ss] - Format for Durations
    * @alias module:QVEDX
    */
 function QVEDX(options){
-	QVEDX.options = options || {};
-	QVEDX.proxy = options.proxy || null;
-	QVEDX.protocol = options.protocol || 'http';
-	QVEDX.host = options.host || 'localhost';
-	QVEDX.port = options.port || 4799;
-	QVEDX.endpoint = options.endpoint || 'QMS/Service';
-	QVEDX.serviceKey = options.permanentServiceKey || null;
-	QVEDX.connectTimeout = options.connectTimeout || 5;
+  QVEDX.options = options || {};
+  QVEDX.proxy = options.proxy || null;
+  QVEDX.protocol = options.protocol || 'http';
+  QVEDX.host = options.host || 'localhost';
+  QVEDX.port = options.port || 4799;
+  QVEDX.endpoint = options.endpoint || 'QMS/Service';
+  QVEDX.serviceKey = options.permanentServiceKey || null;
+  QVEDX.connectTimeout = options.connectTimeout || 5;
 
-	QVEDX.requestLog = options.requestLog || false;
-	QVEDX.consoleLog = options.consoleLog || false;
-	QVEDX.trace = options.trac || false;
+  QVEDX.requestLog = options.requestLog || false;
+  QVEDX.consoleLog = options.consoleLog || false;
+  QVEDX.trace = options.trac || false;
 
-	QVEDX.defaultNamepsace = options.defaultNamepsace || 'http://ws.qliktech.com/QMS/11/';
+  QVEDX.defaultNamepsace = options.defaultNamepsace || 'http://ws.qliktech.com/QMS/11/';
 
-	QVEDX.parserOptions = {explicitArray: false, ignoreAttrs: true, tagNameProcessors:[stripPrefix],attrNameProcessors:[stripPrefix] };
+  QVEDX.parserOptions = {explicitArray: false, ignoreAttrs: true, tagNameProcessors:[stripPrefix],attrNameProcessors:[stripPrefix] };
 
-	QVEDX.curlExecutable = options.curlExecutable || 'curl';
+  QVEDX.curlExecutable = options.curlExecutable || 'curl';
 
-	//Enums
-	QVEDX.prototype.RUN_STATUS = runStatus;
-	QVEDX.prototype.TRIGGER_RESULTS = triggerResults;
-	QVEDX.prototype.SERVICE_TYPES = serviceTypes;
+  QVEDX.dateFormat = options.dateFormat || "DD.MM.YYYY HH:mm:ss"
+  QVEDX.durationFormat = options.durationFormat || "HH:mm:ss"
+
+  //Enums
+  QVEDX.prototype.RUN_STATUS = runStatus;
+  QVEDX.prototype.TRIGGER_RESULTS = triggerResults;
+  QVEDX.prototype.SERVICE_TYPES = serviceTypes;
 };
 
 /**
@@ -318,34 +323,34 @@ function QVEDX(options){
  * 
  * @param {object/function} options - Options or Callback
  * @param {function} [callback] - Callback
- *	@param {object} callback.err - Error
- * 	@param {object} callback.value - Service Key
+ *  @param {object} callback.err - Error
+ *  @param {object} callback.value - Service Key
  */
 QVEDX.prototype.GetTimeLimitedServiceKey = function(options,callback){
-	if (typeof options === 'function') callback = options;	
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetTimeLimitedServiceKey',
-		data: '&lt;GetTimeLimitedServiceKey xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\"/>'
-	},callback);
+  if (typeof options === 'function') callback = options;  
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetTimeLimitedServiceKey',
+    data: '&lt;GetTimeLimitedServiceKey xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\"/>'
+  },callback);
 }
 
 QVEDX.prototype.Ping = function(options,callback){
-	if (typeof options === 'function') callback = options;	
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'Ping',
-		data: '&lt;Ping xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\"/>&lt;/s:Body>&lt;/s:Envelope>'
-	},callback);
+  if (typeof options === 'function') callback = options;  
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'Ping',
+    data: '&lt;Ping xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\"/>&lt;/s:Body>&lt;/s:Envelope>'
+  },callback);
 }
 
 QVEDX.prototype.FindEDX = function(options,callback){
-	if(!options.name){
-		return callback({err: 'options.name not defined'});
-	}
+  if(!options.name){
+    return callback(createErrorObject('options.name not defined'));
+  }
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'FindEDX',
-		data: '&lt;FindEDX xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;name>'+ options.name +'&lt;/name>&lt;/FindEDX>'
-	},callback);
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'FindEDX',
+    data: '&lt;FindEDX xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;name>'+ options.name +'&lt;/name>&lt;/FindEDX>'
+  },callback);
 }
 
 /**
@@ -370,58 +375,110 @@ QVEDX.prototype.FindEDX = function(options,callback){
  *  });
  * 
  * @param {object} options - Options
- * 	@param {string} options.taskNameOrID - Task Name or Task ID
- * 	@param {string} [options.password] - Password
+ *  @param {string} options.taskNameOrID - Task Name or Task ID
+ *  @param {string} [options.password] - Password
  * @param {function} [callback] - Callback
- *	@param {object} callback.err - Error
- * 	@param {object} callback.value - Status Result
+ *  @param {object} callback.err - Error
+ *  @param {object} callback.value - Trigger Result
+ *  @param {object} callback.value.ExecId - Trigger Result ExecId
  */
 QVEDX.prototype.TriggerEDXTask = function(options,callback){
-	if(!options.taskNameOrID){
-		return callback({err: 'options.taskNameOrID not defined'});
-	}
+  if(!options.taskNameOrID){
+    return callback(createErrorObject('options.taskNameOrID not defined'));
+  }
 
-	if(!options.password){
-		options.password = '&lt;password i:nil="true" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/>'; //TODO const
-	}	
+  if(!options.password){
+    options.password = '&lt;password i:nil="true" xmlns:i="http://www.w3.org/2001/XMLSchema-instance"/>'; //TODO const
+  }   
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'TriggerEDXTask',
-		data: '&lt;TriggerEDXTask xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qdsID>00000000-0000-0000-0000-000000000000&lt;/qdsID>&lt;taskNameOrID>'+options.taskNameOrID+'&lt;/taskNameOrID>&lt;password>'+options.password+'&lt;/password>&lt;variableName i:nil=\\\"true\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\"/>&lt;variableValues i:nil=\\\"true\\\" xmlns:a=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\"/>&lt;/TriggerEDXTask>'
-	},callback);
+  //Intercept callback and manipulate response object
+  var interceptCallback = function(err,triggerResult){
+    if(!err){
+      triggerResult.ExecID = triggerResult.ExecId;
+      triggerResult.executionID = triggerResult.ExecId;
+    }
+    callback(err,triggerResult);  
+  }
+
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'TriggerEDXTask',
+    data: '&lt;TriggerEDXTask xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qdsID>00000000-0000-0000-0000-000000000000&lt;/qdsID>&lt;taskNameOrID>'+options.taskNameOrID+'&lt;/taskNameOrID>&lt;password>'+options.password+'&lt;/password>&lt;variableName i:nil=\\\"true\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\"/>&lt;variableValues i:nil=\\\"true\\\" xmlns:a=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\"/>&lt;/TriggerEDXTask>'
+  },interceptCallback);
 }
 
+/**
+ * Get EDX Task Status
+ * @public
+ *
+ * @example //Trigger EDX Task
+ *  var status = wait.for(q.GetEDXTaskStatus,{
+ *      executionID: "MY ExecId"
+ *  });
+ *
+ * @example //Trigger EDX Task
+ *  q.GetEDXTaskStatus({
+ *      executionID: "MY ExecID
+ *  }, function(err,status){
+ *      if(err){
+ *          return console.log(err);
+ *      }
+ *      console.dir(status);
+ *  });
+ * 
+ * @param {object} options - Options
+ *  @param {string} options.executionID - ExecId from Trigger Result
+ * @param {function} [callback] - Callback
+ *  @param {object} callback.err - Error
+ *  @param {object} callback.value - Status Result
+ */
 QVEDX.prototype.GetEDXTaskStatus = function(options,callback){
-	if(!options.executionID){
-		return callback({err: 'options.executionID not defined'});
-	}
+  if(!options.executionID){
+    return callback(createErrorObject('options.executionID not defined'));
+  }
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetEDXTaskStatus',
-		data: '&lt;GetEDXTaskStatus xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qdsID>00000000-0000-0000-0000-000000000000&lt;/qdsID>&lt;executionID>'+options.executionID+'&lt;/executionID>&lt;/GetEDXTaskStatus>'
-	},callback);
+  //Intercept callback and manipulate response object
+  var interceptCallback = function(err,status){
+    if(!err){
+      //TODO calcualate duration properly
+      var startMoment = moment(status.StartTime,QVEDX.dateFormat);
+      var endMoment = moment(status.FinishTime,QVEDX.dateFormat);
+      if(endMoment.isValid()){
+        endMoment = moment();
+      }
+      
+      var duration = moment(endMoment.diff(startMoment));
+      status.duration = moment.duration(duration, "minutes").format();
+      //console.log(status.duration);
+    }
+    callback(err,status);  
+  }  
+
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetEDXTaskStatus',
+    data: '&lt;GetEDXTaskStatus xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qdsID>00000000-0000-0000-0000-000000000000&lt;/qdsID>&lt;executionID>'+options.executionID+'&lt;/executionID>&lt;/GetEDXTaskStatus>'
+  },interceptCallback);
 }
 
 QVEDX.prototype.GetTaskStatus = function(options,callback){
-	if(!options.taskID){
-		return callback({err: 'options.taskID not defined'});
-	}
+  if(!options.taskID){
+    return callback(createErrorObject('options.taskID not defined'));
+  }
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetTaskStatus',
-		data: '&lt;GetTaskStatus xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskID>'+options.taskID+'&lt;/taskID>&lt;scope>All&lt;/scope>&lt;/GetTaskStatus>'
-	},callback);
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetTaskStatus',
+    data: '&lt;GetTaskStatus xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskID>'+options.taskID+'&lt;/taskID>&lt;scope>All&lt;/scope>&lt;/GetTaskStatus>'
+  },callback);
 }
 
 QVEDX.prototype.AbortTask = function(options,callback){
-	if(!options.taskID){
-		return callback({err: 'options.taskID not defined'});
-	}
+  if(!options.taskID){
+    return callback(createErrorObject('options.taskID not defined'));
+  }
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'AbortTask',
-		data: '&lt;AbortTask xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskID>'+options.taskID+'&lt;/taskID>&lt;/AbortTask>'
-	},callback);
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'AbortTask',
+    data: '&lt;AbortTask xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskID>'+options.taskID+'&lt;/taskID>&lt;/AbortTask>'
+  },callback);
 }
 
 /**
@@ -446,43 +503,43 @@ QVEDX.prototype.AbortTask = function(options,callback){
  * @param {object/function} options - Options or Callback
  *  @param {string} [options.serviceTypes=All] - Service Types
  * @param {function} [callback] - Callback
- *	@param {object} callback.err - Error
- * 	@param {object} callback.value - Services
- * 	 @param {object} callback.value.ServiceInfo - ServiceInfo
- * 	
+ *  @param {object} callback.err - Error
+ *  @param {object} callback.value - Services
+ *   @param {object} callback.value.ServiceInfo - ServiceInfo
+ *  
  */
 QVEDX.prototype.GetServices = function(options,callback){
-	if (typeof options === 'function'){
-		callback = options;
-		options = {serviceTypes: 'All'};
-	}
+  if (typeof options === 'function'){
+    callback = options;
+    options = {serviceTypes: 'All'};
+  }
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetServices',
-		data: '&lt;GetServices xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;serviceTypes>'+options.serviceTypes+'&lt;/serviceTypes>&lt;/GetServices>'
-	},callback);	
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetServices',
+    data: '&lt;GetServices xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;serviceTypes>'+options.serviceTypes+'&lt;/serviceTypes>&lt;/GetServices>'
+  },callback);    
 }
 
 QVEDX.prototype.GetTasks = function(options,callback){
-	if(!options.qdsID){
-		options.qdsID = '00000000-0000-0000-0000-000000000000';
-	}
+  if(!options.qdsID){
+    options.qdsID = '00000000-0000-0000-0000-000000000000';
+  }
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetTasks',
-		data: '&lt;GetTasks xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qdsID>'+options.qdsID+'&lt;/qdsID>&lt;/GetTasks>'
-	},callback);	
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetTasks',
+    data: '&lt;GetTasks xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qdsID>'+options.qdsID+'&lt;/qdsID>&lt;/GetTasks>'
+  },callback);    
 }
 
 QVEDX.prototype.GetCALConfiguration = function(options,callback){
-	if(!options.qvsID){
-		return callback({err: 'options.qvsID not defined'});
-	}
+  if(!options.qvsID){
+    return callback(createErrorObject('options.qvsID not defined'));
+  }
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetCALConfiguration',
-		data: '&lt;GetCALConfiguration xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qvsID>'+options.qvsID+'&lt;/qvsID>&lt;scope>All&lt;/scope>&lt;/GetCALConfiguration>'
-	},callback);
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetCALConfiguration',
+    data: '&lt;GetCALConfiguration xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qvsID>'+options.qvsID+'&lt;/qvsID>&lt;scope>All&lt;/scope>&lt;/GetCALConfiguration>'
+  },callback);
 }
 
 /**
@@ -505,21 +562,21 @@ QVEDX.prototype.GetCALConfiguration = function(options,callback){
  *  });
  * 
  * @param {object} options - Options
- * 	@param {object} options.qvsID - QVS ID
+ *  @param {object} options.qvsID - QVS ID
  * @param {function} callback - Callback
- *	@param {object} callback.err - Error
- * 	@param {object} callback.value - User Documents
- * 	  @param {array} callback.value.DocumentNode - DocumentNode
+ *  @param {object} callback.err - Error
+ *  @param {object} callback.value - User Documents
+ *    @param {array} callback.value.DocumentNode - DocumentNode
  */
 QVEDX.prototype.GetUserDocuments = function(options,callback){
-	if(!options.qvsID){
-		return callback({err: 'options.qvsID not defined'});
-	}
+  if(!options.qvsID){
+    return callback(createErrorObject('options.qvsID not defined'));
+  }
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetUserDocuments',
-		data: '&lt;GetUserDocuments xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qvsID>'+options.qvsID+'&lt;/qvsID>&lt;/GetUserDocuments>'
-	},callback);
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetUserDocuments',
+    data: '&lt;GetUserDocuments xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qvsID>'+options.qvsID+'&lt;/qvsID>&lt;/GetUserDocuments>'
+  },callback);
 }
 
 /**
@@ -544,26 +601,26 @@ QVEDX.prototype.GetUserDocuments = function(options,callback){
  *  });
  * 
  * @param {object} options - Options
- * 	@param {object} options.documentNode - DocumentNode
+ *  @param {object} options.documentNode - DocumentNode
  *  @param {object} [options.scope=All] - Scope
  * @param {function} callback - Callback
- *	@param {object} callback.err - Error
- * 	@param {object} callback.value - Document Meta Data
+ *  @param {object} callback.err - Error
+ *  @param {object} callback.value - Document Meta Data
  */
 QVEDX.prototype.GetDocumentMetaData = function(options,callback){
-	if(!options.documentNode){
-		return callback({err: 'options.documentNode not defined'});
-	}	
-	if(!options.scope){
-		options.scope = 'All'
-	}
+  if(!options.documentNode){
+    return callback(createErrorObject('options.documentNode not defined'));
+  }   
+  if(!options.scope){
+    options.scope = 'All'
+  }
 
-	var data = '&lt;GetDocumentMetaData xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;userDocument xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:FolderID>{FolderID}&lt;/a:FolderID>&lt;a:ID>{ID}&lt;/a:ID>&lt;a:IsOrphan>{IsOrphan}&lt;/a:IsOrphan>&lt;a:IsSubFolder>{IsSubFolder}&lt;/a:IsSubFolder>&lt;a:Name>{Name}&lt;/a:Name>&lt;a:RelativePath>{RelativePath}&lt;/a:RelativePath>&lt;a:TaskCount>{TaskCount}&lt;/a:TaskCount>&lt;a:Type>{Type}&lt;/a:Type>&lt;/userDocument>&lt;scope>'+options.scope+'&lt;/scope>&lt;/GetDocumentMetaData>';
+  var data = '&lt;GetDocumentMetaData xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;userDocument xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:FolderID>{FolderID}&lt;/a:FolderID>&lt;a:ID>{ID}&lt;/a:ID>&lt;a:IsOrphan>{IsOrphan}&lt;/a:IsOrphan>&lt;a:IsSubFolder>{IsSubFolder}&lt;/a:IsSubFolder>&lt;a:Name>{Name}&lt;/a:Name>&lt;a:RelativePath>{RelativePath}&lt;/a:RelativePath>&lt;a:TaskCount>{TaskCount}&lt;/a:TaskCount>&lt;a:Type>{Type}&lt;/a:Type>&lt;/userDocument>&lt;scope>'+options.scope+'&lt;/scope>&lt;/GetDocumentMetaData>';
 
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetDocumentMetaData',
-		data: expandTemplate(data,options.documentNode)
-	},callback);	
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetDocumentMetaData',
+    data: expandTemplate(data,options.documentNode)
+  },callback);    
 }
 
 /**
@@ -603,20 +660,20 @@ QVEDX.prototype.GetDocumentMetaData = function(options,callback){
  *  @param {object} callback.value - Document Meta Data
  */
 QVEDX.prototype.GetCALInfoForUser = function(options,callback){
-    if(!options.user){
-        return callback({err: 'options.user not defined'});
-    }
+  if(!options.user){
+    return callback(createErrorObject('options.user not defined'));
+  }
 
-    if(!options.qvsID){
-        return callback({err: 'options.qvsID not defined'});
-    }
+  if(!options.qvsID){
+    return callback(createErrorObject('options.qvsID not defined'));
+  }
 
-    var data = '&lt;GetCALInfoForUser xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qvsID>{qvsID}&lt;/qvsID>&lt;user>{user}&lt;/user>&lt;/GetCALInfoForUser>';
+  var data = '&lt;GetCALInfoForUser xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;qvsID>{qvsID}&lt;/qvsID>&lt;user>{user}&lt;/user>&lt;/GetCALInfoForUser>';
 
-    QVEDX.prototype.GenericAPICall({
-        soapAction: 'GetCALInfoForUser',
-        data: expandTemplate(data,options)
-    },callback);    
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'GetCALInfoForUser',
+    data: expandTemplate(data,options)
+  },callback);    
 }
 
 
@@ -657,110 +714,113 @@ QVEDX.prototype.GetCALInfoForUser = function(options,callback){
  *  @param {object} callback.value - Document Meta Data
  */
 QVEDX.prototype.LookupNames = function(options,callback){
-    if(!options.user){
-        return callback({err: 'options.user not defined'});
-    }
+  if(!options.user){
+    return callback(createErrorObject('options.user not defined'));
+  }
 
-    if(!options.dscID){
-        return callback(createErrorObject('options.dscID not defined'));
-    }
+  if(!options.dscID){
+    return callback(createErrorObject('options.dscID not defined'));
+  }
 
-    var data = '&lt;LookupNames xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;dscID>{dscID}&lt;/dscID>&lt;names xmlns:a=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:string>{user}&lt;/a:string>&lt;/names>&lt;/LookupNames>';
+  var data = '&lt;LookupNames xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;dscID>{dscID}&lt;/dscID>&lt;names xmlns:a=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:string>{user}&lt;/a:string>&lt;/names>&lt;/LookupNames>';
 
-    QVEDX.prototype.GenericAPICall({
-        soapAction: 'LookupNames',
-        data: expandTemplate(data,options)
-    },callback);    
+  QVEDX.prototype.GenericAPICall({
+    soapAction: 'LookupNames',
+    data: expandTemplate(data,options)
+  },callback);    
 }
 
 QVEDX.prototype.GetTaskStatusNodes = function(options,callback){ 
-	if (typeof options === 'function'){
-		callback = options; 
-		options = {};
-	}
-	options.categoryName = options.categoryName || '';
-	options.qdsID = options.qdsID || '00000000-0000-0000-0000-000000000000';
-	options.taskID = options.taskID || '00000000-0000-0000-0000-000000000000';	
+  //TODO make it work
+  if (typeof options === 'function'){
+    callback = options; 
+    options = {};
+  }
+  options.categoryName = options.categoryName || '';
+  options.qdsID = options.qdsID || '00000000-0000-0000-0000-000000000000';
+  options.taskID = options.taskID || '00000000-0000-0000-0000-000000000000';  
+
+  var data = '&lt;GetTaskStatusNodes xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskStatusNodeRequests xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:TaskStatusNodeRequest>&lt;a:CategoryName>CPS Pricing&lt;/a:CategoryName>&lt;a:ID>00000000-0000-0000-0000-000000000000&lt;/a:ID>&lt;a:QDSID>00000000-0000-0000-0000-000000000000&lt;/a:QDSID>&lt;a:RootType>Category&lt;/a:RootType>&lt;a:TaskID>00000000-0000-0000-0000-000000000000&lt;/a:TaskID>&lt;a:UseFlatTaskList>false&lt;/a:UseFlatTaskList>&lt;/a:TaskStatusNodeRequest>&lt;/taskStatusNodeRequests>&lt;filter i:nil=\\\"true\\\" xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\"/>&lt;scope>All&lt;/scope>&lt;/GetTaskStatusNodes>';
+
+  var data2 = '&lt;GetTaskStatusNodes xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskStatusNodeRequests xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:TaskStatusNodeRequest>&lt;a:CategoryName>'+options.categoryName+'&lt;/a:CategoryName>&lt;a:ID>00000000-0000-0000-0000-000000000000&lt;/a:ID>&lt;a:QDSID>'+options.qdsID+'&lt;/a:QDSID>&lt;a:RootType>Category&lt;/a:RootType>&lt;a:TaskID>'+options.taskID+'&lt;/a:TaskID>&lt;a:UseFlatTaskList>false&lt;/a:UseFlatTaskList>&lt;/a:TaskStatusNodeRequest>&lt;/taskStatusNodeRequests>&lt;filter xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:Categories i:nil=\\\"true\\\" xmlns:b=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\"/>&lt;a:EnabledState>Enabled&lt;/a:EnabledState>&lt;a:LastExecution i:nil=\\\"true\\\"/>&lt;a:QDSIds i:nil=\\\"true\\\" xmlns:b=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\"/>&lt;a:Schedule i:nil=\\\"true\\\"/>&lt;a:TaskIds i:nil=\\\"true\\\" xmlns:b=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\"/>&lt;a:TaskName i:nil=\\\"true\\\"/>&lt;a:TaskStatuses>&lt;a:TaskStatusValue>Waiting&lt;/a:TaskStatusValue>&lt;/a:TaskStatuses>&lt;a:TaskTypes i:nil=\\\"true\\\"/>&lt;/filter>&lt;scope>All&lt;/scope>&lt;/GetTaskStatusNodes>';
+
+  var data3 = '&lt;GetTaskStatusNodes xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskStatusNodeRequests xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:TaskStatusNodeRequest>&lt;a:CategoryName>'+options.categoryName+'&lt;/a:CategoryName>&lt;a:ID>00000000-0000-0000-0000-000000000000&lt;/a:ID>&lt;a:QDSID>00000000-0000-0000-0000-000000000000&lt;/a:QDSID>&lt;a:RootType>Category&lt;/a:RootType>&lt;a:TaskID>'+options.taskID+'&lt;/a:TaskID>&lt;a:UseFlatTaskList>false&lt;/a:UseFlatTaskList>&lt;/a:TaskStatusNodeRequest>&lt;/taskStatusNodeRequests>&lt;filter i:nil=\\\"true\\\" xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\"/>&lt;scope>None&lt;/scope>&lt;/GetTaskStatusNodes>';
 
 
-	var data = '&lt;GetTaskStatusNodes xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskStatusNodeRequests xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:TaskStatusNodeRequest>&lt;a:CategoryName>CPS Pricing&lt;/a:CategoryName>&lt;a:ID>00000000-0000-0000-0000-000000000000&lt;/a:ID>&lt;a:QDSID>00000000-0000-0000-0000-000000000000&lt;/a:QDSID>&lt;a:RootType>Category&lt;/a:RootType>&lt;a:TaskID>00000000-0000-0000-0000-000000000000&lt;/a:TaskID>&lt;a:UseFlatTaskList>false&lt;/a:UseFlatTaskList>&lt;/a:TaskStatusNodeRequest>&lt;/taskStatusNodeRequests>&lt;filter i:nil=\\\"true\\\" xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\"/>&lt;scope>All&lt;/scope>&lt;/GetTaskStatusNodes>';
-
-	var data2 = '&lt;GetTaskStatusNodes xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskStatusNodeRequests xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:TaskStatusNodeRequest>&lt;a:CategoryName>'+options.categoryName+'&lt;/a:CategoryName>&lt;a:ID>00000000-0000-0000-0000-000000000000&lt;/a:ID>&lt;a:QDSID>'+options.qdsID+'&lt;/a:QDSID>&lt;a:RootType>Category&lt;/a:RootType>&lt;a:TaskID>'+options.taskID+'&lt;/a:TaskID>&lt;a:UseFlatTaskList>false&lt;/a:UseFlatTaskList>&lt;/a:TaskStatusNodeRequest>&lt;/taskStatusNodeRequests>&lt;filter xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:Categories i:nil=\\\"true\\\" xmlns:b=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\"/>&lt;a:EnabledState>Enabled&lt;/a:EnabledState>&lt;a:LastExecution i:nil=\\\"true\\\"/>&lt;a:QDSIds i:nil=\\\"true\\\" xmlns:b=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\"/>&lt;a:Schedule i:nil=\\\"true\\\"/>&lt;a:TaskIds i:nil=\\\"true\\\" xmlns:b=\\\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\\\"/>&lt;a:TaskName i:nil=\\\"true\\\"/>&lt;a:TaskStatuses>&lt;a:TaskStatusValue>Waiting&lt;/a:TaskStatusValue>&lt;/a:TaskStatuses>&lt;a:TaskTypes i:nil=\\\"true\\\"/>&lt;/filter>&lt;scope>All&lt;/scope>&lt;/GetTaskStatusNodes>';
-
-	var data3 = '&lt;GetTaskStatusNodes xmlns=\\\"'+QVEDX.defaultNamepsace+'\\\">&lt;taskStatusNodeRequests xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\">&lt;a:TaskStatusNodeRequest>&lt;a:CategoryName>'+options.categoryName+'&lt;/a:CategoryName>&lt;a:ID>00000000-0000-0000-0000-000000000000&lt;/a:ID>&lt;a:QDSID>00000000-0000-0000-0000-000000000000&lt;/a:QDSID>&lt;a:RootType>Category&lt;/a:RootType>&lt;a:TaskID>'+options.taskID+'&lt;/a:TaskID>&lt;a:UseFlatTaskList>false&lt;/a:UseFlatTaskList>&lt;/a:TaskStatusNodeRequest>&lt;/taskStatusNodeRequests>&lt;filter i:nil=\\\"true\\\" xmlns:a=\\\"http://schemas.datacontract.org/2004/07/PIX.QMSAPI.DataObjects\\\" xmlns:i=\\\"http://www.w3.org/2001/XMLSchema-instance\\\"/>&lt;scope>None&lt;/scope>&lt;/GetTaskStatusNodes>';
-
-
-	QVEDX.prototype.GenericAPICall({
-		soapAction: 'GetTaskStatusNodes',
-		data: data3
-	},callback);
+  QVEDX.prototype.GenericAPICall({
+      soapAction: 'GetTaskStatusNodes',
+      data: data3
+  },callback);
 }
 
 QVEDX.prototype.GenericAPICall = function (options,callback){
-	if(!options.soapAction){
-		return callback({err: 'options.soapAction not defined'});
-	}
+  if(!options.soapAction){
+    return callback(createErrorObject('options.soapAction not defined'));
+  }
 
-	var soapAction = ''+QVEDX.defaultNamepsace+'IQMS/' + options.soapAction;
+  var soapAction = ''+QVEDX.defaultNamepsace+'IQMS/' + options.soapAction;
 
-	callback = callback || function () {};
+  callback = callback || function () {};
 
-	if(!options.data){
-		return callback({err: 'options.data not defined'});
-	}
+  if(!options.data){
+    return callback(createErrorObject('options.data not defined'));
+  }
 
-	var callId = uuid.v1();
-	console.log('---- QVEDX-API-Request: ' + callId + ' ' + options.soapAction);
-
-
-	var err = null;
-	var result = {};
-
-	var cmd = createCurlRequest({
-		soapAction: soapAction,
-		data: '&lt;s:Envelope xmlns:s=\\\"http://schemas.xmlsoap.org/soap/envelope/\\\">&lt;s:Body>'+options.data+'&lt;/s:Body>&lt;/s:Envelope>'
-	});
+  var callId = uuid.v1();
+  console.log('---- QVEDX-API-Request: ' + callId + ' ' + options.soapAction);
 
 
-	writeRequestLog(callId,cmd);
+  var err = null;
+  var result = {};
 
-	child = exec(cmd, function (err, stdout, stderr) {
-		writeRequestLog(callId,stdout + '\n' + stderr);
+  var cmd = createCurlRequest({
+    soapAction: soapAction,
+    data: '&lt;s:Envelope xmlns:s=\\\"http://schemas.xmlsoap.org/soap/envelope/\\\">&lt;s:Body>'+options.data+'&lt;/s:Body>&lt;/s:Envelope>'
+  });
 
-		if(err !== null){
-            return callback(parseCURLError(err, stdout, stderr));
-		}
+  writeRequestLog(callId,cmd);
 
-        if(stdout == ""){
-            //TODO improve error handling!
-            //QMS API returns in some cases empty results. Very ugly
-            return callback(err,"Empty response from QMS API received");
-        }
+  child = exec(cmd, function (err, stdout, stderr) {
+      writeRequestLog(callId,stdout + '\n' + stderr);
 
-		soapResult = null;
+      if(err !== null){
+          return callback(parseCURLError(err, stdout, stderr));
+      }
 
-		parseString(stdout, QVEDX.parserOptions,  function (err, result) {
-			if(err){
-				return callback(err);
-			}
-			try {
-				var soapBody = getSOAPBody(result);
-				if (soapBody) soapResult = soapBody[options.soapAction + 'Response'][options.soapAction + 'Result'];
+      if(stdout == ""){
+        //TODO improve error handling!
+        //QMS API returns in some cases empty results. Very ugly
+        return callback(createErrorObject("Empty response from QMS API received"));
+      }
 
-				if(options.soapAction == 'GetTimeLimitedServiceKey'){
-					//TODO handle error
-					QVEDX.serviceKey = soapResult;
-				}
-			} catch(ex){
-				var soapFault = getSOAPFault(result);
-				if(soapFault){
-					return handleSOAPFault(callback,soapFault,result,stdout);
-				}
-				return callback(ex);
-			}
-    		callback(err,soapResult);
-		});
-	});
+      soapResult = null;
+
+      //try {
+        parseString(stdout, QVEDX.parserOptions,  function (err, result) {
+          if(err){
+            return callback(err);
+          }
+          try {
+            var soapBody = getSOAPBody(result);
+            if (soapBody) soapResult = soapBody[options.soapAction + 'Response'][options.soapAction + 'Result'];
+
+            if(options.soapAction == 'GetTimeLimitedServiceKey'){
+              //TODO handle error
+              QVEDX.serviceKey = soapResult;
+            }
+          } catch(ex){
+            var soapFault = getSOAPFault(result);
+            if(soapFault){
+                return handleSOAPFault(callback,soapFault,result,stdout);
+            }
+            return callback(createErrorObject(ex));
+          }
+          return callback(err,soapResult);
+        });
+/*      } catch(ex) {
+        callback(createErrorObject(ex));
+      } */
+  });
 }
 
 //GetQVSDocumentsPerUser
@@ -1258,7 +1318,7 @@ module.exports = QVEDX;</code></pre>
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu Oct 09 2014 14:32:18 GMT+0200 (MESZ)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu Oct 09 2014 17:45:23 GMT+0200 (MESZ)
 </footer>
 
 <script> prettyPrint(); </script>

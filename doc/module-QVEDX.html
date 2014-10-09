@@ -849,6 +849,84 @@
         </tr>
 	
 	
+	
+        <tr>
+            
+                <td class="name"><code>dateFormat</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+            
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+                    
+                
+                    
+                
+                </td>
+            
+            
+            
+                <td class="default">
+                
+                    DD.MM.YYYY HH:mm:ss
+                
+                </td>
+            
+            
+            <td class="description last">Date Format</td>
+        </tr>
+	
+	
+	
+        <tr>
+            
+                <td class="name"><code>durationFormat</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+            
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+                    
+                
+                    
+                
+                </td>
+            
+            
+            
+                <td class="default">
+                
+                    HH:mm:ss
+                
+                </td>
+            
+            
+            <td class="description last">Format for Durations</td>
+        </tr>
+	
+	
 	</tbody>
 </table>
             </td>
@@ -888,7 +966,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line262">line 262</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line264">line 264</a>
     </li></ul></dd>
     
     
@@ -1828,7 +1906,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line578">line 578</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line635">line 635</a>
     </li></ul></dd>
     
     
@@ -2169,7 +2247,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line526">line 526</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line583">line 583</a>
     </li></ul></dd>
     
     
@@ -2207,6 +2285,303 @@
          return console.log(err);
      }
      console.dir(metadata);
+ });</code></pre>
+
+    
+</dd>
+
+        
+            
+<dt>
+    <h4 class="name" id="GetEDXTaskStatus"><span class="type-signature"></span>GetEDXTaskStatus<span class="signature">(options, <span class="optional">callback</span>)</span><span class="type-signature"></span></h4>
+    
+    
+</dt>
+<dd>
+    
+    
+    <div class="description">
+        Get EDX Task Status
+    </div>
+    
+
+    
+    
+    
+    
+    
+        <h5>Parameters:</h5>
+        
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		<th>Argument</th>
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+                <td class="attributes">
+                
+                    
+                
+                    
+                
+                </td>
+            
+            
+            
+            
+            <td class="description last">Options
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>executionID</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">ExecId from Trigger Result</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+            </td>
+        </tr>
+	
+	
+	
+        <tr>
+            
+                <td class="name"><code>callback</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+            
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+                    
+                
+                    
+                
+                </td>
+            
+            
+            
+            
+            <td class="description last">Callback
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>err</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Error</td>
+        </tr>
+	
+	
+	
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Status Result</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+            </td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+    
+    
+    
+<dl class="details">
+    
+        
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line407">line 407</a>
+    </li></ul></dd>
+    
+    
+    
+    
+    
+    
+    
+</dl>
+
+    
+    
+
+    
+
+    
+    
+    
+    
+    
+    
+    
+        <h5>Examples</h5>
+        
+    <pre class="prettyprint"><code> //Trigger EDX Task
+ var status = wait.for(q.GetEDXTaskStatus,{
+     executionID: "MY ExecId"
+ });</code></pre>
+
+    <pre class="prettyprint"><code> //Trigger EDX Task
+ q.GetEDXTaskStatus({
+     executionID: "MY ExecID
+ }, function(err,status){
+     if(err){
+         return console.log(err);
+     }
+     console.dir(status);
  });</code></pre>
 
     
@@ -2534,7 +2909,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line427">line 427</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line484">line 484</a>
     </li></ul></dd>
     
     
@@ -2783,7 +3158,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line297">line 297</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line302">line 302</a>
     </li></ul></dd>
     
     
@@ -3090,7 +3465,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line487">line 487</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line544">line 544</a>
     </li></ul></dd>
     
     
@@ -3393,7 +3768,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line632">line 632</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line689">line 689</a>
     </li></ul></dd>
     
     
@@ -3705,7 +4080,55 @@
             
             
             
-            <td class="description last">Status Result</td>
+            <td class="description last">Trigger Result
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+	<tr>
+		
+		<th>Name</th>
+		
+		
+		<th>Type</th>
+		
+		
+		
+		
+		
+		<th class="last">Description</th>
+	</tr>
+	</thead>
+	
+	<tbody>
+	
+	
+        <tr>
+            
+                <td class="name"><code>ExecId</code></td>
+            
+            
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+            
+            
+            
+            
+            
+            <td class="description last">Trigger Result ExecId</td>
+        </tr>
+	
+	
+	</tbody>
+</table>
+            </td>
         </tr>
 	
 	
@@ -3742,7 +4165,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line352">line 352</a>
+        <a href="qvedx.js.html">qvedx.js</a>, <a href="qvedx.js.html#line358">line 358</a>
     </li></ul></dd>
     
     
@@ -3809,7 +4232,7 @@
 <br clear="both">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu Oct 09 2014 14:32:18 GMT+0200 (MESZ)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.2</a> on Thu Oct 09 2014 17:45:23 GMT+0200 (MESZ)
 </footer>
 
 <script> prettyPrint(); </script>

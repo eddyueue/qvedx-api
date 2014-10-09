@@ -59,6 +59,7 @@ See [doc/index.htm](https://github.com/pomalbisser/qvedx-api/blob/master/doc/mar
 
 # Working API Methods
 - Trigger a QlikView QMS EDX Task - [TriggerEDXTask](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#TriggerEDXTask)
+- Get EDX Task Status - GetEDXTaskStatus
 - Get QlikView Services - [GetServices](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetServices)
 - Query User Documents - [GetUserDocuments](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetUserDocuments)
 - Query Document Meta Data - [GetDocumentMetaData](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetDocumentMetaData)
@@ -73,5 +74,9 @@ Detailed API-Documentation: [doc/module-QVEDX.html](https://github.com/pomalbiss
 	> grunt generate-docs
 
 
-#TODO
+#TODO / Next Steps
 - Getting Started Tutorial
+- Test and Document all API-Methods
+- Higher Level Services
+	- Add Add / Remove Document CAL's for User
+	- Trigger Task and Track Status of subsequent Tasks until all Task's are finished
