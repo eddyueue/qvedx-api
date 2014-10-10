@@ -1,15 +1,15 @@
-qvedx-api
+qvedx-api v0.1.0
 =====
 
-Node Module for triggering EDX Tasks in QlikView (QMS API) (VERY BETA!)
+Node Module for the [QlikView Management Serice API](http://community.qlik.com/docs/DOC-2683) (QMS API) (BETA) 
 
 # Pre Requisites
-The QVEDX-API requires a CURL installation to communicate with the QlikView Management Service using NTLM authentication. (Tested with Version 7.37.0) Install CURL from [http://www.confusedbycode.com/curl/#downloads](http://www.confusedbycode.com/curl/#downloads) (add to path)
+The QVEDX-API requires a CURL installation to communicate with the QlikView Management Service using NTLM authentication. (Tested with CURL Version 7.37.0) 
+
+Install CURL from [http://www.confusedbycode.com/](http://www.confusedbycode.com/curl/#downloads) 
+
+**Important**: Add CURL executable to path environment variable
 	
-
-
-
-
 # Installation
     npm install pomalbisser/qvedx-api
 
@@ -35,7 +35,7 @@ The QVEDX-API requires a CURL installation to communicate with the QlikView Mana
 	    getServiceKey();
 	    var triggerResult = wait.for(q.TriggerEDXTask,{
 	        taskNameOrID: "QV11SystemMonitor",
-	        password: "test"
+	        password: "password"
 	    });
 	    console.log("triggerResult",triggerResult);
 	}
@@ -55,19 +55,25 @@ The QVEDX-API requires a CURL installation to communicate with the QlikView Mana
   	}    
 
 # Documentation
-See [doc/index.htm](https://github.com/pomalbisser/qvedx-api/blob/master/doc/markdown/readme.md)
+See doc/index.htm
 
 # Working API Methods
-- Trigger a QlikView QMS EDX Task - [TriggerEDXTask](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#TriggerEDXTask)
+- Trigger a QlikView QMS EDX Task - TriggerEDXTask
 - Get EDX Task Status - GetEDXTaskStatus
-- Get QlikView Services - [GetServices](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetServices)
-- Query User Documents - [GetUserDocuments](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetUserDocuments)
-- Query Document Meta Data - [GetDocumentMetaData](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html#GetDocumentMetaData)
+- Get QlikView Services - GetServices
+- Query User Documents - GetUserDocuments
+- Query Document Meta Data - GetDocumentMetaData
 - Get CAL Info for User - GetCALInfoForUser
 - Lookup User Names - LookupNames
+Detailed API-Documentation is in the doc/ folder.
 
-Detailed API-Documentation: [doc/module-QVEDX.html](https://github.com/pomalbisser/qvedx-api/doc/module-QVEDX.html)
-
+## Examples ##
+- trigger.js - Triggering an EDX Task
+- trigger-status.js - Triggering an EDX Task and periodically check status until finished
+- cal-info.js - Get CAL Info for a User
+- cal-management - Display's a User Documents and assigned Document CAL's
+- lookup-names.js - Lookup a User in the Directory Service Connector Service
+See [examples/](./examples/README.md) directory
 
 #Development
 - Update Documentation
@@ -81,3 +87,18 @@ Detailed API-Documentation: [doc/module-QVEDX.html](https://github.com/pomalbiss
 - Higher Level Services
 	- Add / Remove Document CAL's for User
 	- Trigger Task and Track Status of subsequent Tasks until all Task's are finished
+
+#License
+Copyright (c) 2014, Pom Albisser
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.

@@ -1,6 +1,6 @@
 {
   "name": "qvedx-api",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Node Module for triggering EDX Tasks in QlikView (QMS API)",
   "dependencies": {
     "agentkeepalive": "~0.2.2",
