@@ -77,6 +77,7 @@ Detailed API-Documentation: [doc/module-QVEDX.html](https://github.com/pomalbiss
 #TODO / Next Steps
 - Getting Started Tutorial
 - Test and Document all API-Methods
+- Add Variables-Support for Triggering EDX Tasks
 - Higher Level Services
-	- Add Add / Remove Document CAL's for User
+	- Add / Remove Document CAL's for User
 	- Trigger Task and Track Status of subsequent Tasks until all Task's are finished

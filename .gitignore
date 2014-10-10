@@ -33,3 +33,6 @@ cheatsheet.txt
 
 res/*
 example-*.js
+
+apiSettings.js
+*.bat
