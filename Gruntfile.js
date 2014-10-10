@@ -35,6 +35,6 @@ module.exports = function(grunt) {
 
   // Default task(s).
   grunt.registerTask('default', ['jsdoc']);
-  grunt.registerTask('generate-docs', ['clean:doc', 'jsdoc:dist', 'jsdox:generate']);
+  grunt.registerTask('generate-docs', ['clean:doc', 'jsdoc:dist']); //, 'jsdox:generate'
 
 };
